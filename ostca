@@ -1,0 +1,152 @@
+#!/bin/bash
+
+DIR=$(cd $(dirname $0); pwd -P)
+source ${DIR}/config.sh
+
+function usage {
+	echo "USAGE:"
+	echo "$(basename $0) create root                          : Create a root CA"
+	echo "$(basename $0) create int                           : Create an intermediate CA"
+	echo "$(basename $0) create server server_name [extension]: Create a server certificate"
+	echo "$(basename $0) edit root                            : Edit the openssl.cnf of the root CA"
+	echo "$(basename $0) edit int                             : Edit the openssl.cnf of the intermediate CA"
+	echo "$(basename $0) index root                           : Edit the index of the root CA"
+	echo "$(basename $0) index int                            : Edit the index of the intermediate CA"
+	echo "$(basename $0) help"
+}
+
+if [ "$1" == "help" -o $# -lt 1 ]; then
+	usage
+fi
+
+if [ "$1" == "edit" -a "$2" == "root" ]; then
+	vi ${CA_ROOT}/openssl.cnf
+fi
+
+if [ "$1" == "edit" -a "$2" == "int" ]; then
+	vi ${CA_INT}/openssl.cnf
+fi
+
+if [ "$1" == "index" -a "$2" == "root" ]; then
+	vi ${CA_ROOT}/index.txt
+fi
+
+if [ "$1" == "index" -a "$2" == "int" ]; then
+	vi ${CA_INT}/index.txt
+fi
+
+if [ "$1" == "create" -a "$2" == "root" ]; then
+	if [ -d ${CA_ROOT} ]; then
+		echo "Root CA already exist in ${CA_ROOT}"
+		exit 1
+	fi
+
+	mkdir -p ${CA_ROOT}
+	cd ${CA_ROOT}
+	mkdir certs crl newcerts private
+	chmod 700 private
+	touch index.txt
+	echo 1000 > serial
+
+	cp ${DIR}/root_ca.cnf openssl.cnf
+	vi openssl.cnf
+
+	openssl genrsa -aes256 -out private/ca.key.pem 4096
+	chmod 400 private/ca.key.pem
+	
+	openssl req -config openssl.cnf \
+      -key private/ca.key.pem \
+      -new -x509 -days 7300 -sha256 -extensions v3_ca \
+      -out certs/ca.cert.pem 
+
+	chmod 444 certs/ca.cert.pem
+
+	openssl x509 -noout -text -in certs/ca.cert.pem
+fi
+
+if [ "$1" == "create" -a "$2" == "int" ]; then
+	if [ -d ${CA_INT} ]; then
+        echo "Intermediate CA already exist in ${CA_INT}"
+        exit 1
+    fi
+	mkdir -p ${CA_INT}
+	cd ${CA_INT}
+	mkdir certs crl csr newcerts private
+	chmod 700 private
+	touch index.txt
+	echo 1000 > serial
+	
+	echo 1000 > /root/ca/intermediate/crlnumber
+
+	cp ${DIR}/int_ca.cnf openssl.cnf
+	vi openssl.cnf
+	
+	openssl genrsa -aes256 \
+      -out private/intermediate.key.pem 4096
+
+	chmod 400 private/intermediate.key.pem
+
+	openssl req -config openssl.cnf -new -sha256 \
+      -key private/intermediate.key.pem \
+      -out csr/intermediate.csr.pem	
+
+	cd ${CA_ROOT}
+
+	openssl ca -config openssl.cnf -extensions v3_intermediate_ca \
+      -days 3650 -notext -md sha256 \
+      -in ${CA_INT}/csr/intermediate.csr.pem \
+      -out ${CA_INT}/certs/intermediate.cert.pem
+	
+	chmod 444 ${CA_INT}/certs/intermediate.cert.pem
+
+	openssl verify -CAfile certs/ca.cert.pem \
+      ${CA_INT}/certs/intermediate.cert.pem
+
+	cat ${CA_INT}/certs/intermediate.cert.pem \
+      certs/ca.cert.pem > ${CA_INT}/certs/ca-chain.cert.pem
+
+	chmod 444 ${CA_INT}/certs/ca-chain.cert.pem
+fi	
+
+if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
+	SERVER="$3"
+	EXT_OPT="extensions server_cert"
+	if [ "$4" != "" ]; then
+		EXT_OPT="-extensions $4"
+	fi
+
+	cd ${CA_INT}
+	if [ -f private/${SERVER}.key.pem ]; then
+		rm -f private/${SERVER}.key.pem
+	fi
+
+	openssl genrsa -aes256 \
+      -out private/${SERVER}.key.pem 2048
+
+	chmod 400 private/${SERVER}.key.pem
+
+	openssl req -config openssl.cnf \
+      -key private/${SERVER}.key.pem \
+      -new -sha256 -out csr/${SERVER}.csr.pem
+
+	if [ -f certs/${SERVER}.cert.pem ]; then
+        rm -f certs/${SERVER}.cert.pem
+    fi
+
+	openssl ca -config openssl.cnf \
+      ${EXT_OPT} -days 375 -notext -md sha256 \
+      -in csr/${SERVER}.csr.pem \
+      -out certs/${SERVER}.cert.pem
+
+	chmod 444 certs/${SERVER}.cert.pem
+
+	openssl verify -CAfile certs/ca-chain.cert.pem \
+      certs/${SERVER}.cert.pem
+fi
+
+
+
+
+
+
+
