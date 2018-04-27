@@ -12,11 +12,21 @@ function usage {
 	echo "$(basename $0) edit int                             : Edit the openssl.cnf of the intermediate CA"
 	echo "$(basename $0) index root                           : Edit the index of the root CA"
 	echo "$(basename $0) index int                            : Edit the index of the intermediate CA"
+	echo "$(basename $0) pack server_name					  : Pack the certificates into a tar archive"
+	echo "$(basename $0) show server_name					  : Show content of certificate"
+	echo "$(basename $0) rmpw server_name					  : Remove the password of the key"
+	echo "$(basename $0) verify server_name					  : Verify the ceritficate to match certificate chain"
 	echo "$(basename $0) help"
 }
 
 if [ "$1" == "help" -o $# -lt 1 ]; then
 	usage
+fi
+
+if [ "$1" == "verify" -a "$2" != "" ]; then
+	SERVER="$2"
+	openssl verify -CAfile ${CA_INT}/certs/ca-chain.cert.pem \
+      ${CA_INT}/certs/${SERVER}.cert.pem
 fi
 
 if [ "$1" == "edit" -a "$2" == "root" ]; then
@@ -33,6 +43,23 @@ fi
 
 if [ "$1" == "index" -a "$2" == "int" ]; then
 	vi ${CA_INT}/index.txt
+fi
+
+if [ "$1" == "pack" -a "$2" != "" ]; then
+	SERVER="$2"
+	mkdir -p ${CA_INT}/pack
+	tar czf ${CA_INT}/pack/${SERVER}.tar.gz -C ${CA_INT} certs/${SERVER}.cert.pem private/${SERVER}.key.pem certs/ca-chain.cert.pem
+fi
+
+if [ "$1" == "show" -a "$2" != "" ]; then
+	SERVER="$2"
+	openssl x509 -noout -text -in ${CA_INT}/certs/${SERVER}.cert.pem | less
+fi
+
+if [ "$1" == "rmpw" -a "$2" != "" ]; then
+	SERVER="$2"
+	openssl rsa -in ${CA_INT}/private/${SERVER}.key.pem -out ${CA_INT}/private/${SERVER}.key.pem.tmp
+	mv ${CA_INT}/private/${SERVER}.key.pem.tmp ${CA_INT}/private/${SERVER}.key.pem
 fi
 
 if [ "$1" == "create" -a "$2" == "root" ]; then
@@ -110,7 +137,7 @@ fi
 
 if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
 	SERVER="$3"
-	EXT_OPT="extensions server_cert"
+	EXT_OPT="-extensions server_cert"
 	if [ "$4" != "" ]; then
 		EXT_OPT="-extensions $4"
 	fi
