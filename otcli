@@ -6,6 +6,9 @@ source ${DIR}/config.sh
 function usage {
 	echo "USAGE:"
 	echo "$(basename $0) show url port                     : Show content of certificatei from the given url"
+	echo "$(basename $0) show cert						   : Show the content of a cert file"
+	echo "$(basename $0) verify ca_cert cert			   : Verify if certificate matches ca certificate"
+	echo "$(basename $0) info cert						   : Display the important information about the certificate"
 	echo "$(basename $0) hash cert                         : get hash of cert"
 	echo "$(basename $0) hashlink cert                     : create a hashlink to the cert"
 	echo "$(basename $0) help"
@@ -19,6 +22,19 @@ if [ "$1" == "show" -a "$2" != "" -a "$3" != "" ]; then
 	URL="$2"
 	PORT="$3"
 	openssl s_client -showcerts -connect ${URL}:${PORT} </dev/null 2>/dev/null | openssl x509 -text
+elif [ "$1" == "show" -a "$2" != "" ]; then
+	CERT="$2"
+	openssl x509 -noout -text -in "${CERT}" | less
+elif [ "$1" == "info" -a "$2" != "" ]; then
+	CERT="$2"
+	openssl x509 -noout -text -in "${CERT}" | sed -E 's,^[[:space:]]+,,' | sed -n -e '/^Issuer:/p' \
+			-e '/^Subject:/p' \
+			-e '/^Not Before:/p' \
+			-e '/^Not After :/p'
+elif [ "$1" == "verify" -a "$2" != "" -a "$3" != "" ]; then
+	CACERT="$2"
+	CERT="$3"
+	openssl verify -CAfile "${CACERT}" "${CERT}"
 elif [ "$1" == "hash" -a "$2" != "" ]; then
 	CERT="$2"
 	openssl x509 -noout -hash -in "${CERT}"
