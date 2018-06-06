@@ -27,10 +27,30 @@ elif [ "$1" == "show" -a "$2" != "" ]; then
 	openssl x509 -noout -text -in "${CERT}" | less
 elif [ "$1" == "info" -a "$2" != "" ]; then
 	CERT="$2"
-	openssl x509 -noout -text -in "${CERT}" | sed -E 's,^[[:space:]]+,,' | sed -n -e '/^Issuer:/p' \
-			-e '/^Subject:/p' \
-			-e '/^Not Before:/p' \
-			-e '/^Not After :/p'
+	while read line 
+	do
+		if echo $line | grep "^Issuer:" 2>&1 >/dev/null; then
+			ISSUER=$(echo ${line} | sed -E 's/Issuer: (.*)/\1/') 
+		fi
+		if echo $line | grep "^Subject:" 2>&1 >/dev/null; then
+			SUBJECT=$(echo ${line} | sed -E 's/Subject: (.*)/\1/') 
+		fi
+		if echo $line | grep "^Not Before:" 2>&1 >/dev/null; then
+			FROM=$(echo ${line} | sed -E 's/Not Before: (.*)/\1/') 
+		fi
+		if echo $line | grep "^Not After :" 2>&1 >/dev/null; then
+			TO=$(echo ${line} | sed -E 's/Not After : (.*)/\1/') 
+		fi
+	done < <(openssl x509 -noout -text -in "${CERT}" | sed -E 's,^[[:space:]]+,,')
+	printf "%-11s: %s\n" "Issuer" "${ISSUER}" 
+	printf "%-11s: %s\n" "Subject" "${SUBJECT}" 
+	if [ "${ISSUER}" == "${SUBJECT}" ]; then
+		printf "%-11s: %s\n" "Selfsigned" "Yes"
+	else
+		printf "%-11s: %s\n" "Selfsigned" "No"
+	fi
+	printf "%-11s: %s\n" "Valid from" "${FROM}" 
+	printf "%-11s: %s\n" "Valid to" "${TO}" 
 elif [ "$1" == "verify" -a "$2" != "" -a "$3" != "" ]; then
 	CACERT="$2"
 	CERT="$3"
