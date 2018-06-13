@@ -21,10 +21,10 @@ fi
 if [ "$1" == "show" -a "$2" != "" -a "$3" != "" ]; then
 	URL="$2"
 	PORT="$3"
-	openssl s_client -showcerts -connect ${URL}:${PORT} </dev/null 2>/dev/null | openssl x509 -text
+	${OPENSSL} s_client -showcerts -connect ${URL}:${PORT} </dev/null 2>/dev/null | ${OPENSSL} x509 -text
 elif [ "$1" == "show" -a "$2" != "" ]; then
 	CERT="$2"
-	openssl x509 -noout -text -in "${CERT}" | less
+	${OPENSSL} x509 -noout -text -in "${CERT}" | less
 elif [ "$1" == "info" -a "$2" != "" ]; then
 	CERT="$2"
 	while read line 
@@ -41,7 +41,7 @@ elif [ "$1" == "info" -a "$2" != "" ]; then
 		if echo $line | grep "^Not After :" 2>&1 >/dev/null; then
 			TO=$(echo ${line} | sed -E 's/Not After : (.*)/\1/') 
 		fi
-	done < <(openssl x509 -noout -text -in "${CERT}" | sed -E 's,^[[:space:]]+,,')
+	done < <(${OPENSSL} x509 -noout -text -in "${CERT}" | sed -E 's,^[[:space:]]+,,')
 	printf "%-11s: %s\n" "Issuer" "${ISSUER}" 
 	printf "%-11s: %s\n" "Subject" "${SUBJECT}" 
 	if [ "${ISSUER}" == "${SUBJECT}" ]; then
@@ -54,13 +54,13 @@ elif [ "$1" == "info" -a "$2" != "" ]; then
 elif [ "$1" == "verify" -a "$2" != "" -a "$3" != "" ]; then
 	CACERT="$2"
 	CERT="$3"
-	openssl verify -CAfile "${CACERT}" "${CERT}"
+	${OPENSSL} verify -CAfile "${CACERT}" "${CERT}"
 elif [ "$1" == "hash" -a "$2" != "" ]; then
 	CERT="$2"
-	openssl x509 -noout -hash -in "${CERT}"
+	${OPENSSL} x509 -noout -hash -in "${CERT}"
 elif [ "$1" == "hashlink" -a "$2" != "" ]; then
 	CERT="$2"
-	HASH=$(openssl x509 -noout -hash -in "${CERT}")
+	HASH=$(${OPENSSL} x509 -noout -hash -in "${CERT}")
 	ln -s "${CERT}" "${HASH}.0"
 	# on windows use mklink "${HASH}.0" "${CERT}"
 fi

@@ -8,8 +8,8 @@ function usage {
 	echo "$(basename $0) create root                          : Create a root CA"
 	echo "$(basename $0) create int                           : Create an intermediate CA"
 	echo "$(basename $0) create server server_name [extension]: Create a server certificate"
-	echo "$(basename $0) edit root                            : Edit the openssl.cnf of the root CA"
-	echo "$(basename $0) edit int                             : Edit the openssl.cnf of the intermediate CA"
+	echo "$(basename $0) edit root                            : Edit the ${OPENSSL}.cnf of the root CA"
+	echo "$(basename $0) edit int                             : Edit the ${OPENSSL}.cnf of the intermediate CA"
 	echo "$(basename $0) index root                           : Edit the index of the root CA"
 	echo "$(basename $0) index int                            : Edit the index of the intermediate CA"
 	echo "$(basename $0) pack server_name                     : Pack the certificates into a tar archive"
@@ -30,16 +30,16 @@ fi
 
 if [ "$1" == "verify" -a "$2" != "" ]; then
 	SERVER="$2"
-	openssl verify -CAfile ${CA_INT}/certs/${CHAIN_NAME}.cert.pem \
+	${OPENSSL} verify -CAfile ${CA_INT}/certs/${CHAIN_NAME}.cert.pem \
       ${CA_INT}/certs/${SERVER}.cert.pem
 fi
 
 if [ "$1" == "edit" -a "$2" == "root" ]; then
-	vi ${CA_ROOT}/openssl.cnf
+	vi ${CA_ROOT}/${OPENSSL}.cnf
 fi
 
 if [ "$1" == "edit" -a "$2" == "int" ]; then
-	vi ${CA_INT}/openssl.cnf
+	vi ${CA_INT}/${OPENSSL}.cnf
 fi
 
 if [ "$1" == "index" -a "$2" == "root" ]; then
@@ -58,12 +58,12 @@ fi
 
 if [ "$1" == "show" -a "$2" != "" ]; then
 	SERVER="$2"
-	openssl x509 -noout -text -in ${CA_INT}/certs/${SERVER}.cert.pem | less
+	${OPENSSL} x509 -noout -text -in ${CA_INT}/certs/${SERVER}.cert.pem | less
 fi
 
 if [ "$1" == "rmpw" -a "$2" != "" ]; then
 	SERVER="$2"
-	openssl rsa -in ${CA_INT}/private/${SERVER}.key.pem -out ${CA_INT}/private/${SERVER}.key.pem.tmp
+	${OPENSSL} rsa -in ${CA_INT}/private/${SERVER}.key.pem -out ${CA_INT}/private/${SERVER}.key.pem.tmp
 	mv ${CA_INT}/private/${SERVER}.key.pem.tmp ${CA_INT}/private/${SERVER}.key.pem
 fi
 
@@ -80,20 +80,20 @@ if [ "$1" == "create" -a "$2" == "root" ]; then
 	touch index.txt
 	echo 1000 > serial
 
-	cp ${DIR}/root_ca.cnf openssl.cnf
-	vi openssl.cnf
+	cp ${DIR}/root_ca.cnf ${OPENSSL}.cnf
+	vi ${OPENSSL}.cnf
 
-	openssl genrsa -aes256 -out private/ca.key.pem 4096
+	${OPENSSL} genrsa -aes256 -out private/ca.key.pem 4096
 	chmod 400 private/ca.key.pem
 	
-	openssl req -config openssl.cnf \
+	${OPENSSL} req -config ${OPENSSL}.cnf \
       -key private/ca.key.pem \
       -new -x509 -days 7300 -sha256 -extensions v3_ca \
       -out certs/ca.cert.pem 
 
 	chmod 444 certs/ca.cert.pem
 
-	openssl x509 -noout -text -in certs/ca.cert.pem
+	${OPENSSL} x509 -noout -text -in certs/ca.cert.pem
 fi
 
 if [ "$1" == "create" -a "$2" == "int" ]; then
@@ -110,28 +110,28 @@ if [ "$1" == "create" -a "$2" == "int" ]; then
 	
 	echo 1000 > ${CA_INT}/crlnumber
 
-	cp ${DIR}/int_ca.cnf openssl.cnf
-	vi openssl.cnf
+	cp ${DIR}/int_ca.cnf ${OPENSSL}.cnf
+	vi ${OPENSSL}.cnf
 	
-	openssl genrsa -aes256 \
+	${OPENSSL} genrsa -aes256 \
       -out private/${INT_NAME}.key.pem 4096
 
 	chmod 400 private/${INT_NAME}.key.pem
 
-	openssl req -config openssl.cnf -new -sha256 \
+	${OPENSSL} req -config ${OPENSSL}.cnf -new -sha256 \
       -key private/${INT_NAME}.key.pem \
       -out csr/${INT_NAME}.csr.pem	
 
 	cd ${CA_ROOT}
 
-	openssl ca -config openssl.cnf -extensions v3_intermediate_ca \
+	${OPENSSL} ca -config ${OPENSSL}.cnf -extensions v3_intermediate_ca \
       -days 3650 -notext -md sha256 \
       -in ${CA_INT}/csr/${INT_NAME}.csr.pem \
       -out ${CA_INT}/certs/${INT_NAME}.cert.pem
 	
 	chmod 444 ${CA_INT}/certs/${INT_NAME}.cert.pem
 
-	openssl verify -CAfile certs/ca.cert.pem \
+	${OPENSSL} verify -CAfile certs/ca.cert.pem \
       ${CA_INT}/certs/${INT_NAME}.cert.pem
 
 	cat ${CA_INT}/certs/${INT_NAME}.cert.pem \
@@ -152,12 +152,12 @@ if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
 		rm -f private/${SERVER}.key.pem
 	fi
 
-	openssl genrsa -aes256 \
+	${OPENSSL} genrsa -aes256 \
       -out private/${SERVER}.key.pem 2048
 
 	chmod 400 private/${SERVER}.key.pem
 
-	openssl req -config openssl.cnf \
+	${OPENSSL} req -config ${OPENSSL}.cnf \
       -key private/${SERVER}.key.pem \
       -new -sha256 -out csr/${SERVER}.csr.pem
 
@@ -165,14 +165,14 @@ if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
         rm -f certs/${SERVER}.cert.pem
     fi
 
-	openssl ca -config openssl.cnf \
+	${OPENSSL} ca -config ${OPENSSL}.cnf \
       ${EXT_OPT} -days 375 -notext -md sha256 \
       -in csr/${SERVER}.csr.pem \
       -out certs/${SERVER}.cert.pem
 
 	chmod 444 certs/${SERVER}.cert.pem
 
-	openssl verify -CAfile certs/${CHAIN_NAME}.cert.pem \
+	${OPENSSL} verify -CAfile certs/${CHAIN_NAME}.cert.pem \
       certs/${SERVER}.cert.pem
 fi
 
