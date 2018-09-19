@@ -11,6 +11,7 @@ function usage {
 	echo "$(basename $0) info cert						   : Display the important information about the certificate"
 	echo "$(basename $0) hash cert                         : get hash of cert"
 	echo "$(basename $0) hashlink cert                     : create a hashlink to the cert"
+	echo "$(basename $0) fingerprint cert                  : get fingerprint of cert"
 	echo "$(basename $0) help"
 }
 
@@ -63,4 +64,7 @@ elif [ "$1" == "hashlink" -a "$2" != "" ]; then
 	HASH=$(${OPENSSL} x509 -noout -hash -in "${CERT}")
 	ln -s "${CERT}" "${HASH}.0"
 	# on windows use mklink "${HASH}.0" "${CERT}"
+elif [ "$1" == "fingerprint" -a "$2" != "" ]; then
+	CERT="$2"
+	${OPENSSL} x509 -noout -fingerprint -sha1 -in "${CERT}" | sed -e 's/\://g'
 fi

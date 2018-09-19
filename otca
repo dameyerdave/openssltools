@@ -8,6 +8,7 @@ function usage {
 	echo "$(basename $0) create root                                                       : Create a root CA"
 	echo "$(basename $0) create int                                                        : Create an intermediate CA"
 	echo "$(basename $0) create server server_name [extension]                             : Create a server certificate"
+	echo "$(basename $0) create p12 server_name                                            : Create a server certificate"
 	echo "$(basename $0) create dhparam                                                    : Create a dhparam file"
 	echo "$(basename $0) chain chain_name certs (use ca, int, server_name, key:server_name): Create a chain with the given cervificates in order"
 	echo "$(basename $0) copy server_name new_server_name                                  : Copy a certificate to a new name"
@@ -164,13 +165,14 @@ if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
 		rm -f private/${SERVER}.key.pem
 	fi
 
-	${OPENSSL} genrsa -aes256 \
+	${OPENSSL} genrsa -aes256 -passout pass:1234 \
       -out private/${SERVER}.key.pem 2048
 
 	chmod 400 private/${SERVER}.key.pem
 
 	${OPENSSL} req -config openssl.cnf \
       -key private/${SERVER}.key.pem \
+	  -passin pass:1234 \
       -new -sha256 -out csr/${SERVER}.csr.pem
 
 	if [ -f certs/${SERVER}.cert.pem ]; then
@@ -186,6 +188,20 @@ if [ "$1" == "create" -a "$2" == "server" -a "$3" != "" ]; then
 
 	${OPENSSL} verify -CAfile certs/${CHAIN_NAME}.cert.pem \
       certs/${SERVER}.cert.pem
+fi
+
+if [ "$1" == "create" -a "$2" == "p12" -a "$3" != "" ]; then
+	SERVER="$3"
+
+	cd ${CA_INT}
+	if [ ! -f certs/${SERVER}.cert.pem -o ! -f private/${SERVER}.key.pem ]; then
+		echo "Server certificate for ${SERVER} does not exist!"
+		exit 1
+	fi
+
+	${OPENSSL} pkcs12 -export -out certs/${SERVER}.p12 \
+	  -inkey private/${SERVER}.key.pem -in certs/${SERVER}.cert.pem \
+	  -certfile certs/${CHAIN_NAME}.cert.pem
 fi
 
 if [ "$1" == "copy" -a "$2" != "" -a "$3" != "" ]; then
