@@ -78,12 +78,12 @@ commonName                      = Common Name
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.
-countryName_default             = CH
-stateOrProvinceName_default     = AG
-localityName_default            = Aarau
-0.organizationName_default      = Company
-organizationalUnitName_default  = IT
-emailAddress_default            = info@company.com
+countryName_default             = _COUNTRY_
+stateOrProvinceName_default     = _STATE_
+localityName_default            = _LOCALITY_
+0.organizationName_default      = _COMPANY_
+organizationalUnitName_default  = _OU_
+emailAddress_default            = _EMAIL_
 
 [ v3_ca ]
 # Extensions for a typical CA (`man x509v3_config`).
