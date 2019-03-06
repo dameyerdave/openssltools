@@ -81,7 +81,7 @@ emailAddress                    = Email Address
 countryName_default             = CH
 stateOrProvinceName_default     = AG
 localityName_default            = Aarau
-0.organizationName_default      = Company
+0.organizationName_default      = $COMPANY
 organizationalUnitName_default  = IT
 emailAddress_default            = info@company.com
 
