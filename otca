@@ -94,6 +94,12 @@ if [ "$1" == "create" -a "$2" == "root" ]; then
 	echo 1000 > serial
 
 	cp ${DIR}/root_ca.cnf openssl.cnf
+    sed -i.bak s/_COUNTRY_/${COUNTRY}/g openssl.cnf
+    sed -i.bak s/_STATE_/${STATE}/g openssl.cnf
+    sed -i.bak s/_LOCALITY_/${LOCALITY}/g openssl.cnf
+    sed -i.bak s/_OU_/${OU}/g openssl.cnf
+    sed -i.bak s/_COMPANY_/${COMPANY}/g openssl.cnf
+    sed -i.bak s/_EMAIL_/${EMAIL}/g openssl.cnf
 	vi openssl.cnf
 
 	${OPENSSL} genrsa -aes256 -out private/ca.key.pem 4096
@@ -124,6 +130,12 @@ if [ "$1" == "create" -a "$2" == "int" ]; then
 	echo 1000 > ${CA_INT}/crlnumber
 
 	cp ${DIR}/int_ca.cnf openssl.cnf
+    sed -i.bak s/_COUNTRY_/${COUNTRY}/g openssl.cnf
+    sed -i.bak s/_STATE_/${STATE}/g openssl.cnf
+    sed -i.bak s/_LOCALITY_/${LOCALITY}/g openssl.cnf
+    sed -i.bak s/_OU_/${OU}/g openssl.cnf
+    sed -i.bak s/_COMPANY_/${COMPANY}/g openssl.cnf
+    sed -i.bak s/_EMAIL_/${EMAIL}/g openssl.cnf
 	vi openssl.cnf
 	
 	${OPENSSL} genrsa -aes256 \
