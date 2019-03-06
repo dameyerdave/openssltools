@@ -1,5 +1,5 @@
-CA_ROOT=~/CA
-INT_DIR=intermediate
+CA_ROOT=/CA
+INT_DIR=int
 INT_NAME=${INT_DIR}
 CHAIN_NAME=ca-chain
 CA_INT=${CA_ROOT}/${INT_DIR}
