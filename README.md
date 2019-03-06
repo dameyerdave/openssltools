@@ -16,4 +16,4 @@ otca create server <servername>
 ```bash
 otca pack <servername>
 ```
-5. Use the certificate for your application
+5. Use the certificates in your application
