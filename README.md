@@ -4,16 +4,16 @@
 ```bash
 otca create root
 ```
-1. Create intermediate ca
+2. Create intermediate ca
 ```bash
 otca create int
 ```
-1. Create a server certificate
+3. Create a server certificate
 ```bash
 otca create server <servername>
 ```
-1. Pack the certificates
+4. Pack the certificates
 ```bash
 otca pack <servername>
 ```
-1. Use the certificate for your application
+5. Use the certificate for your application
