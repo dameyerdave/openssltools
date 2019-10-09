@@ -6,9 +6,10 @@ source ${DIR}/config.sh
 function usage {
 	echo "USAGE:"
 	echo "$(basename $0) show url port                     : Show content of certificatei from the given url"
-	echo "$(basename $0) show cert						   : Show the content of a cert file"
-	echo "$(basename $0) verify ca_cert cert			   : Verify if certificate matches ca certificate"
-	echo "$(basename $0) info cert						   : Display the important information about the certificate"
+	echo "$(basename $0) show cert                         : Show the content of a cert file"
+	echo "$(basename $0) purpose cert                      : Show the content of a cert file"
+	echo "$(basename $0) verify ca_cert cert               : Verify if certificate matches ca certificate"
+	echo "$(basename $0) info cert                         : Display the important information about the certificate"
 	echo "$(basename $0) hash cert                         : get hash of cert"
 	echo "$(basename $0) hashlink cert                     : create a hashlink to the cert"
 	echo "$(basename $0) fingerprint cert                  : get fingerprint of cert"
@@ -26,6 +27,9 @@ if [ "$1" == "show" -a "$2" != "" -a "$3" != "" ]; then
 elif [ "$1" == "show" -a "$2" != "" ]; then
 	CERT="$2"
 	${OPENSSL} x509 -noout -text -in "${CERT}" | less
+elif [ "$1" == "purpose" -a "$2" != "" ]; then
+	CERT="$2"
+	${OPENSSL} x509 -noout -purpose -in "${CERT}" | less
 elif [ "$1" == "info" -a "$2" != "" ]; then
 	CERT="$2"
 	while read line 
