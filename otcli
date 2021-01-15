@@ -16,6 +16,7 @@ function usage {
 	echo "$(basename $0) fingerprint cert                  : get fingerprint of cert"
 	echo "$(basename $0) p12info p12                       : get info/content about p12 file"
 	echo "$(basename $0) p12unpack p12                     : get key and certs from p12 file"
+  echo "$(basename $0) cer2crt                           : convert a cer to crt" 
 	echo "$(basename $0) help"
 }
 
@@ -86,4 +87,8 @@ elif [ "$1" == "p12unpack" -a "$2" != "" ]; then
     CERT=${P12%.*}
     ${OPENSSL} pkcs12 -in ${P12} -nocerts -out ${CERT}.key.pem
     ${OPENSSL} pkcs12 -in ${P12} -nokeys -out ${CERT}.crt.pem
+elif [ "$1" == "cer2crt" ]; then
+    CER="$2"
+    CERT=${CER%.*}
+    ${OPENSSL} x509 -inform DER -in ${CER} -out ${CERT}.crt
 fi
