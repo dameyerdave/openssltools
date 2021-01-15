@@ -16,7 +16,8 @@ function usage {
 	echo "$(basename $0) fingerprint cert                  : get fingerprint of cert"
 	echo "$(basename $0) p12info p12                       : get info/content about p12 file"
 	echo "$(basename $0) p12unpack p12                     : get key and certs from p12 file"
-  echo "$(basename $0) cer2crt                           : convert a cer to crt" 
+  echo "$(basename $0) cer2crt cer                       : convert a cer to crt" 
+  echo "$(basename $0) check_revoc cert int_cert         : check the revocation status of a cert" 
 	echo "$(basename $0) help"
 }
 
@@ -91,4 +92,29 @@ elif [ "$1" == "cer2crt" ]; then
     CER="$2"
     CERT=${CER%.*}
     ${OPENSSL} x509 -inform DER -in ${CER} -out ${CERT}.crt
+elif [ "$1" == "check_revoc" ]; then
+    echo "Checking OCSP"
+    echo "-------------"
+    CERT="$2"
+    INT_CERT="$3"
+    OCSP_URI=$(${OPENSSL} x509 -in ${CERT} -noout -ocsp_uri)
+    echo "ocsp_uri: ${OCSP_URI}"
+    ${OPENSSL} ocsp -no_nonce -issuer ${INT_CERT} -cert ${CERT} -url ${OCSP_URI} -VAfile ${INT_CERT}
+
+    echo ""
+    echo "Checking CRL"
+    echo "------------"
+    CRL=$(${OPENSSL} x509 -in ${CERT} -noout -text | grep crl | xargs | sed -E 's,^URI:,,')
+    SERIAL=$(${OPENSSL} x509 -in ${CERT} -noout -serial | cut -d'=' -f2)
+    echo "crl:    ${CRL}"
+    echo "serial: ${SERIAL}"
+    CRL_FILE=$(mktemp)
+    curl -s ${CRL} --output ${CRL_FILE}
+    ${OPENSSL} crl -inform DER -text -in ${CRL_FILE} | grep ${SERIAL} 2>&1 >/dev/null
+    if [ $? -eq 0 ]; then
+        echo "Certificate with serial '${SERIAL}' FOUND in revocation list"
+    else
+        echo "Certificate with serial '${SERIAL}' is NOT in revocation list"
+    fi
+    rm -f ${CRL_FILE}
 fi
